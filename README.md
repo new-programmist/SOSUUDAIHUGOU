@@ -1,3 +1,3 @@
-https://new-programmist.github.io/SOSUUDAIHUGOU/　
+https://new-programmist.github.io/SOSUUDAIHUGOU/
 
 です
