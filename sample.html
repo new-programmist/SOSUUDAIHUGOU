@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>素数組み合わせ生成ツール</title>
+    <style>
+        body {
+            font-family: "メイリオ", Meiryo, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        #cardList {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+        .number-input {
+            width: 70px;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-left: 10px;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #008080;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+        button:hover {
+            background-color: #006666;
+        }
+        #output {
+            margin-top: 25px;
+            padding: 20px;
+            border: 2px solid #eee;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+        }
+        .prime-result {
+            color: #2e7d32;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .section-title {
+            color: #008080;
+            border-bottom: 2px solid #008080;
+            padding-bottom: 5px;
+            margin: 25px 0 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>素数組み合わせ生成ツール</h1>
+    
+    <div class="input-group">
+        <label for="cardList">カードリスト (スペース区切り):</label>
+        <input type="text" id="cardList" placeholder="例: 1 3 8 13">
+    </div>
+
+    <div class="input-group">
+        <h3 class="section-title">設定項目</h3>
+        <label for="minLength">最小桁数:</label>
+        <input type="number" id="minLength" class="number-input" min="1" value="1">
+        
+        <label for="maxLength">最大桁数:</label>
+        <input type="number" id="maxLength" class="number-input" min="1" value="2">
+        
+        <label>
+            素数のみ表示:
+            <label class="switch">
+                <input type="checkbox" id="primeOnly" checked>
+                <span class="slider"></span>
+            </label>
+        </label>
+    </div>
+
+    <button onclick="calculateCombinations()">組み合わせ計算</button>
+
+    <div id="output">
+        <p style="color: #666">結果がここに表示されます...</p>
+    </div>
+
+    <script>
+        // 素数判定関数
+        function isPrime(num) {
+            if (num <= 1) return false;
+            if (num <= 3) return true;
+            if (num % 2 === 0 || num % 3 === 0) return false;
+            for (let i = 5; i * i <= num; i += 6) {
+                if (num % i === 0 || num % (i + 2) === 0) return false;
+            }
+            return true;
+        }
+
+        // 順列生成関数
+        function getPermutations(arr, minLen, maxLen) {
+            const result = [];
+            
+            function generate(current, remaining, length) {
+                if (length >= minLen && length <= maxLen) {
+                    result.push([...current]);
+                }
+                if (length >= maxLen) return;
+                
+                for (let i = 0; i < remaining.length; i++) {
+                    current.push(remaining[i]);
+                    generate(current, remaining.filter((_, idx) => idx !== i), length + 1);
+                    current.pop();
+                }
+            }
+            
+            generate([], arr, 0);
+            return result;
+        }
+
+        // メイン処理
+        function calculateCombinations() {
+            const cards = document.getElementById('cardList').value.trim().split(/\s+/);
+            const minLen = parseInt(document.getElementById('minLength').value);
+            const maxLen = parseInt(document.getElementById('maxLength').value);
+            const primeOnly = document.getElementById('primeOnly').checked;
+
+            if (minLen > maxLen) {
+                alert("最小桁数は最大桁数を超えることはできません");
+                return;
+            }
+
+            const permutations = getPermutations(cards, minLen, maxLen);
+            const results = [];
+
+            for (const combo of permutations) {
+                const numStr = combo.join('');
+                const num = parseInt(numStr, 10);
+                const isValid = !isNaN(num) && num.toString() === numStr;
+                const isPrimeNum = isValid && isPrime(num);
+
+                if (isValid && (!primeOnly || isPrimeNum)) {
+                    results.push({
+                        combination: combo.join(' '),
+                        number: num,
+                        isPrime: isPrimeNum
+                    });
+                }
+            }
+
+            // 結果の整理
+            const uniqueResults = Array.from(
+                new Map(results.map(item => [item.number.toString(), item])).values()
+            ).sort((a, b) => b.number - a.number);
+
+            displayResults(uniqueResults);
+        }
+
+        // 結果表示関数
+        function displayResults(results) {
+            const outputDiv = document.getElementById('output');
+            
+            if (results.length === 0) {
+                outputDiv.innerHTML = '<p style="color: #666">該当する組み合わせが見つかりませんでした</p>';
+                return;
+            }
+
+            let html = '<h3 class="section-title">素数組み合わせ結果</h3><ul>';
+            for (const res of results) {
+                html += `<li><strong>${res.combination}</strong> → `;
+                html += res.isPrime 
+                    ? `<span class="prime-result">${res.number}（素数）</span>` 
+                    : `${res.number}`;
+                html += '</li>';
+            }
+            html += '</ul>';
+
+            outputDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
